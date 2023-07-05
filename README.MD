@@ -66,15 +66,14 @@ desired pulse width time.
 The ENC28J60 ethernet uses pin 2 (D2) as an interface select control, whereas WizNet
 interfaces use pin 4 (D4) as their interface select control. This implies there are different output pin connections that depend predominantly on the ethernet module used.
 
-The Arduino NANO + ENC20J60 Ethernet Interface pins used for outputs are:
+The Arduino NANO + ENC20J60 Ethernet Interface pins used for outputs are:  
 
 | Output Number | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |  
 |---------------|---|---|---|---|---|---|---|---|  
 | Pin Number | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 17 |
 | Designation | D3 | D4 | D5 | D6 | D7 | D8 | D9 | A3| 
-
-The Arduino UNO + WizNet Ethernet Interface pins used for outputs are:
   
+The Arduino UNO + WizNet Ethernet Interface pins used for outputs are:  
 
 | Output Number | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |  
 |---------------|---|---|---|---|---|---|---|---|  
@@ -128,18 +127,18 @@ terminate.
 
 The implemented link commands are:
 
-show
-set ip <IP dotted string>  
-set mask <network mask dotted string>  
-set gw <network gateway ip dotted address>  
-set dns <dns ip dotted address>  
-set port <local udp listen port number>  
+show  
+set ip \<IP dotted string>  
+set mask \<network mask dotted string>  
+set gw \<network gateway ip dotted address>  
+set dns \<dns ip dotted address>  
+set port \<local udp listen port number>  
 set mac <6 hex value with colon seperators>  
-set invert <string of eight 0/1>  
+set invert \<string of eight characters (0 = not invert, or 1 = invert)>  
 save  
 
 After settings are updated the new values must be saved, then the Arduino must 
-be re-booted to activate the settings
+be re-booted to activate the settings.
 
 
 ## Acknowledgements
