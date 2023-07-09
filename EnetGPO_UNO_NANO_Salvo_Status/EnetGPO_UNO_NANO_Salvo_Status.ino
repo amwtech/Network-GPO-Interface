@@ -1,7 +1,7 @@
 // ======================================
 // Program Versions:
 // 1.0    Initial Release
-
+// 1.01   Enhanced preprocessor tests for host board and NIC type
 
 /* ============================================================================
 This sketch implements a GPO (General Purpose Output) interface.
@@ -48,23 +48,23 @@ The number after the lower-case 's' is the switch id which is in the range
 are recognised. Badly formed messages are just ignored, no error reports are
 provided.
 
-When a pulsed output is required the controlling system must send two messages, 
-one switching the output on, the second switching the output off after the 
-desired pulse width time.
+When a pulsed output is required the controlling system must send two 
+messages: one switching the output on, the second switching the output 
+off after the desired pulse width time.
 
 The Arduino NANO pins used for outputs are:
 Relay Number   1   2   3   4   5   6   7   8
 Pin Number     3   4   5   6   7   8   9  17 
 Designation   D3  D4  D5  D6  D7  D8  D9  A3
 
-Note digital pin 2 is used by the ENC28J60 series Ethernet Shield.
+    Note digital pin 2 is used by the ENC28J60 series Ethernet Shield.
 
 The Arduino UNO pins used for outputs are:
 Relay Number   1   2   3   4   5   6   7   8
 Pin Number     2   3   5   6   7   8   9  17 
 Designation   D2  D3  D5  D6  D7  D8  D9  A3
 
-Note digital pin 4 is used by the WizNet Ethernet Shield.
+    Note digital pin 4 is used by the WizNet Ethernet Shield.
 
 Because multiple interfaces may be present on the same IP network care must
 be taken to ensure the MAC adddress and the IP address used by each GPO unit
@@ -147,16 +147,37 @@ PERFORMANCE OF THIS SOFTWARE.
 // WizNet WS5100 or WS5500 device. These two NIC units need different support
 // libraries.
 //
-// Comment out the #define _NIC_ENC28J60 when using a WizNet NIC
+// Enable the #define for the NIC type in use. Comment out the other _NIC_XXX define.
 #define _NIC_ENC28J60
+// #define _NIC_WIZNET
 
-// Comment out one of the two defines below to match the host board type
+// Enable the #define for the board type in use.
 #define _NANO_HOST
 // #define _UNO_HOST
 
+// Test that one host board and one NIC are defined
+#if !defined(_NIC_ENC28J60) && !defined(_NIC_WIZNET)
+#error An ethernet NIC type must be defined.
+#endif
+
+#if defined(_NIC_ENC28J60) && defined(_NIC_WIZNET)
+#error Only 1 ethernet NIC type must be defined.
+#endif
+
+#if !defined(_NANO_HOST) && !defined(_UNO_HOST)
+#error A host board type must be defined.
+#endif
+
+#if defined(_NANO_HOST) && defined(_UNO_HOST)
+#error Only 1 board type must be defined.
+#endif
+
+// Select the relevant NIC library support
 #ifdef _NIC_ENC28J60
 #include <EthernetENC.h>
-#else
+#endif
+
+#ifdef _NIC_WIZNET
 #include <SPI.h>
 #include <Ethernet.h>
 #endif
@@ -216,12 +237,12 @@ char packetBuffer[UDP_RX_PACKET_MAX_SIZE];  // buffer to hold incoming packet,
 // Buffer used in decoding OSC switch commands
 int switchSet[MAXGPO] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
-EthernetUDP Udp; // An EthernetUDP instance to let us send and receive packets over UDP
+EthernetUDP Udp; // EthernetUDP instance to let us receive and send packets over UDP
 
-bool printEnabled = false;  // True if serial interface enabled. Pin A2 sets value.
+bool printEnabled = false;    // True if serial interface enabled. Pin A2 sets value.
 #define MAXSTRINGINPUT 42
 String inputString = "";      // A String to hold incoming serial data
-bool stringComplete = false;  // True when the input string is complete and ready to parse.
+bool stringComplete = false;  // True when input string is complete and ready to parse.
 
 
 // ========================================================================= //
@@ -230,7 +251,7 @@ bool stringComplete = false;  // True when the input string is complete and read
 
 void setPinModes(void)
 {
-  // Set our output pins mode and initial value
+  // Set output pins mode and initial value
   for (int i = _MIN_LOGICAL_OUT; i < _MIN_LOGICAL_OUT + MAXGPO; i++)
   {
     pinMode(logical_to_physical(i) , OUTPUT);
@@ -329,7 +350,7 @@ void copyIPdataToEditable() {
 }
 
 
-// Write new values into EEPROM for the edit set of values. The total number of 
+// Write new values into EEPROM for the edit set of values. Total number of 
 // writes is expected to be small over the life of the GPO hardware.
 int writeIpEepromData(int whichSet) {
   const int ip_Data_Starts[IP_SETS] = {_IP_ADDRESS_01, _IP_ADDRESS_02, _IP_ADDRESS_03, _IP_ADDRESS_04}; // Lookup table for first address of a set
@@ -450,7 +471,7 @@ void printIPstack(byte* my_mac, IPAddress addr_ip, IPAddress addr_mask, IPAddres
 /* ----------------------------------------------------------------------------
   The OSC message structure used for this application is very simple. This 
   allows the message parsing code to be significantly simplified, reducing 
-  code footprint in both flash and ram memory. OSC bundles are NOT supported.
+  code footprints in both flash and ram memory. OSC bundles are NOT supported.
 
   The recognised OSC control message address is "/gpiswitch/out" and the 
   message body is a string that contains the switch ids and states required. 

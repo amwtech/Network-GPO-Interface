@@ -5,8 +5,8 @@
 // of that EEPROM to store operational parameters including the ethernet MAC 
 // address, the output polarity invert controls and four sets of IP addresses. 
 //
-// The multiple address sets provide fast switching of IP addresses when the GPO
-// interface is used on multiple networks.
+// The multiple address sets provide fast switching of IP configuration when 
+// the GPO interface is used on multiple networks.
 //
 // The following block of definitions set the first storage locations for each
 // block of information.
@@ -60,4 +60,3 @@ bool parseInvert(String invert);
 void parseInputString(void);
 
 #endif
-
