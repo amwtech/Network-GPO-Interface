@@ -1,5 +1,10 @@
 Changelog
 =========
 
-04-July-2023
-Version 1.0    Initial Release
+Version 1.01   09-July-2023
+Update documentation to include pins A4 and A5 controlling status reports
+Update C++ pre-processor code to improve testing of board and ethernet selections.
+
+
+Version 1.0    04-July-2023
+Initial Release
