@@ -7,13 +7,13 @@ Each GPO output state (Off/On) is remote controlled over an IP connection using 
 control of multiple outputs set to their required states using a single message.
 
 ## Physical Output Interface
-The final GPO output hardware interface is commonly implemented using a relay 
-module that provides galvanic isolation between the GPO interface and the 
+The final GPO output hardware interface is often implemented using a relay 
+module providing galvanic isolation between the GPO interface and the 
 external controlled hardware. Some relay modules require an active low control 
-input to enable the relay, others need a high level (5V) control. This program 
+input to enable the relay, others need an active high level (5V) control. This program 
 includes an output invert control process that enables a controller to send the
 logical output state which the program adapts the logical state to that required 
-by the specific relay interface. The invert control process is per relay, and the 
+by the specific relay interface. The invert control process is per output, and the 
 settings are stored in EEPROM inside the Arduino processor.
 
 ## Microcontroller Hardware
@@ -37,7 +37,7 @@ Ethernet Library: Ethernet
 
 ## Control Message Format
 The limited code memory in the Arduino, especially in a Nano using an ENC28J60
-series NIC, requires the controlling OSC client to carefully craft the OSC 
+series NIC, requires the controlling OSC client to carefully "craft" the OSC 
 messages sent to the GPO interface module. Each OSC message must be "raw", 
 not sent as part of an OSC bundle. The OSC address for control message 
 reception is:
@@ -63,8 +63,8 @@ one switching the output on, the second switching the output off after the
 desired pulse width time.
 
 ## Output Pin Allocation
-The ENC28J60 ethernet uses pin 2 (D2) as an interface select control, whereas WizNet
-interfaces use pin 4 (D4) as their interface select control. This implies there are different output pin connections that depend predominantly on the ethernet module used.
+The ENC28J60 ethernet uses pin 2 (D2) as an interface select control. WizNet
+interfaces use pin 4 (D4) to enabe/disable a microSD sub-system on the shield. This implies there are different output pin connections that depend predominantly on the ethernet module used.
 
 The Arduino NANO + ENC20J60 Ethernet Interface pins used for outputs are:  
 
@@ -82,9 +82,9 @@ The Arduino UNO + WizNet Ethernet Interface pins used for outputs are:
 
 ## Input Pin allocations
 ### IP Address Sets
-Because multiple interfaces may be present on the same IP network care must
-be taken to ensure the MAC adddress and the IP address used by each GPO unit
-are unique.
+Multiple interfaces can be present on the same IP network hence care must 
+be taken during installation to ensure the MAC address and the IP address 
+used by each GPO unit are unique.
 
 Some interface instances may be moved between networks. To avoid the need 
 to re-program the IP data on each move, the GPO unit stores the MAC address 
@@ -93,19 +93,20 @@ and A1 are used as digital inputs functioning as IP set selectors. With no pin
 connections made to A0 and A1 the first of the four IP address sets is used. 
 
 ### Serial Link Enable
-Arduino pin A2 is used as a digital input. If this returns a logic 1 when
+Arduino pin A2 is used as a digital input. If this pin returns a logic 1 when
 read during boot up the USB serial link is activated, otherwise the USB 
 connector is only used as a power source. If pin A2 is open-circuit the serial 
-mode is disabled.
+mode is disabled. Serial mode must be active to edit the IP and MAC data. Serial 
+mode should be disabled unless edits are required.
 
 ### Enable Status Request Message
 Arduino pin A4 is used to enable/disable recognition of a status report request 
-message from a controller. The status request is enabled when pin A4 is set at a low
+message sent by a controller. The status request is enabled when pin A4 is set at a low
 (0V) level. When status replies are enabled the response is sent to the 
-IP address and port that issued the status request. Using status request enables 
-a controller process to know the state of all GPI outputs when the controller 
-process starts, and can also be used as a background ping system that tests if the 
-GPI interface is online.
+IP address that issued the status request. The port number for the reply can either be 
+the port number used by the status request message, or a port number defined by the user during interface installation. Using status request enables a controller process 
+to know the state of all GPI outputs when the controller process starts, and can 
+also be used as a background ping system that tests if the GPI interface is online.
 
 ### Auto Status Enable Mode
 Arduino pin A5 enables/disables auto-status response mode. When enabled, a 
@@ -122,7 +123,7 @@ The elements of the active IP set can be updated via the USB serial connection.
 The serial link must be enabled before boot by taking pin A2 low. Each
 serial command is terminated by a line feed <lf> character. Input processing
 ignores any carriage return characters on the link, so the terminal that
-sends the commands can use <lf> only, <cr><lf>, or <lf><cr> as the line
+sends the commands can use \<lf> only, \<cr>\<lf>, or \<lf>\<cr> as the line
 terminate.
 
 The implemented link commands are:
@@ -135,6 +136,7 @@ set dns \<dns ip dotted address>
 set port \<local udp listen port number>  
 set mac <6 hex value with colon seperators>  
 set invert \<string of eight characters (0 = not invert, or 1 = invert)>  
+set statusport \<port number to receive status responses>  
 save  
 
 After settings are updated the new values must be saved, then the Arduino must 
@@ -142,5 +144,4 @@ be re-booted to activate the settings.
 
 
 ## Acknowledgements
-Thanks to those who have contributed to the various libraries such as the 
-Ethernet library and released them for others to use.
+Thanks to those kind people who have contributed to the various support libraries such as the Ethernet library and released them for others to use.
