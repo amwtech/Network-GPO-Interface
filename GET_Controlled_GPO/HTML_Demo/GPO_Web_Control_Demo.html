@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>General Purpose Output control via HTML GET</title>
+
+<style type="text/css">
+:root {
+   --btnBaseColour: blue;
+   --titleBarHeight: 4.5vh;
+   --swIdHeight: 9vh;
+   --indicateHeight: 4vh;
+}
+
+html, body {
+   background-color: black; color: white;
+   font-family: Arial, sans-serif; font-size: 3vh; text-align: center; vertical-align: middle;
+}
+
+.title {
+   position: absolute; top: 0vh; left: 0vw; width: 93vw; height: var(--titleBarHeight);
+   background-color: rgb(9, 143, 125); font-weight: bold; line-height: var(--titleBarHeight);
+   user-select: none;
+   font-size: min(6em, 3vh);
+}
+
+.controlpanel {
+   position: absolute; top: 5vh; left: 0vw; width: 93vw; height: 68.5vh;
+   background-color: cornflowerblue;
+}
+
+.switchid {
+   background-color:indigo; display: inline-block; user-select: none;
+   position: absolute; left: 0.5vw; top: 0.75vh; width: 20vw; height: var(--swIdHeight);
+   border-style:groove ; border-color: white; 
+   border-top-width: 0.5vh; border-bottom-width: 0.5vh; border-left-width: 0.5vw; border-right-width: 0.5vw;
+   font-weight: bold; line-height: var(--swIdHeight);
+   font-size: min(6em, 3vh);
+}
+
+.indicate { 
+   background-color: black; display: inline-block; user-select: none;
+   position: absolute; left: 0.5vw; top: 11.5vh; width: 21vw; height: var(--indicateHeight);
+   line-height: var(--indicateHeight);
+}
+
+.swOn{
+   background-color: red; color: white; display: inline-block; 
+   position: absolute; left: 11.5vw; top: 16.5vh; width: 10vw; height: 7vh;
+   font-size: 2.5vh; line-height:5vh; border-width: 1vh; border-color: rgb(170, 170, 170);
+   font-size: min(3em, 2.5vh);
+}
+
+.swOff{
+   background-color: green; color: white; display: inline-block; 
+   position: absolute; left: 0.5vw; top: 16.5vh; width: 10vw; height: 7vh;
+   line-height:5vh; border-width: 1vh; border-color: rgb(170, 170, 170);
+   font-size: min(1.5em, 2.5vh);
+}
+
+.swToggle{
+   background-color: var(--btnBaseColour); display: inline-block; 
+   position: absolute; left: 0.5vw; top: 24.5vh; width: 21vw; height: 7vh; line-height:5vh;
+   color: white;  border-width: 1vh; border-color: rgb(170, 170, 170);
+   font-size: min(1.5em, 2.5vh);
+}
+
+.swPanel {
+   position: absolute;
+   background-color: rgb(32, 32, 32); width: 22vw; height: 32.5vh;
+}
+
+#switch1 { position: absolute; top: 1vh; left: 1vw;  }
+#switch2 { position: absolute; top: 1vh; left: 24vw;  }
+#switch3 { position: absolute; top: 1vh; left: 47vw;  }
+#switch4 { position: absolute; top: 1vh; left: 70vw;  }
+#switch5 { position: absolute; top: 35vh; left: 1vw;  }
+#switch6 { position: absolute; top: 35vh; left: 24vw;  }
+#switch7 { position: absolute; top: 35vh; left: 47vw;  }
+#switch8 { position: absolute; top: 35vh; left: 70vw;  }
+
+.statuspanel {
+   position: absolute; left: 0vw; top: 74vh; width: 93vw; height: 5vh; background-color: darkcyan;
+}
+
+.netstat-id{
+   position: absolute; left: 5vw; top: 1vh; height: 3vh; 
+   font-family: Arial,sans-serif; font-size: 2.4vh; color: white; 
+   text-align: left; line-height: 3vh; vertical-align: middle;
+   user-select: none;
+}
+
+.netactions {
+   position: relative; left: 1vw; top: 1vh; width: 3vw; height: 2.6vh; background-color: green;
+   border-color: white; border-width: 0.2vw; border-style: solid;
+}
+
+.redbox { background-color: red; }
+
+</style>
+
+<script src="./config.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+
+// setSwitchOrPoll(url, options) supports both status polling and setting a switch value.
+// The operation is controlled by the url parameter text string:
+// Get status => http://aa.bb.cc.dd:ee
+// Get status => http://aa.bb.cc.dd:ee/gpiswitch/out
+// Set switch => http://aa.bb.cc.dd:ee/gpiswitch/out?s1=1
+async function setSwitchOrPoll(myURL, myOptions) {
+   try {
+      if (timer_id >= 0) {
+         clearTimeout(timer_id); // Kill any active timer
+         timer_id = -1;
+      }
+      // Start the timeout counter, then issue GET request through fetch function
+      timer_id = setTimeout(networkTimeout, net_timeout);
+      const response = await fetch(myURL, myOptions);
+      if (!response.ok) {
+         if (timer_id >= 0) {
+            clearTimeout(timer_id);
+            timer_id = -1;
+            showNetStatus(-1);
+         }
+         throw new Error("Network response was not ok");
+      }
+      const swState = await response.json();
+      if (timer_id >= 0) {
+         clearTimeout(timer_id);
+         timer_id = -1;
+      }
+      showNetStatus(1);
+
+      // Extract the switch status
+      for (let i = 1; i <= 8; i++) {
+         let value = swState['s' + i] === 0 ? 0 : 1;
+         if (sw_state[i] != value) {
+            sw_state[i] = value;
+            showState(i, value);
+         }
+      }
+   } catch (error) {
+      if (timer_id >= 0) {
+         clearTimeout(timer_id);
+         timer_id = -1;
+      }
+      console.error("There was a problem with the request", error);
+   }
+}
+
+// Globally accesible variables
+let fetchOptions = { method: "GET", mode: "cors", cache: "no-cache" };
+let switchIP = "0.0.0.0";
+let switchPort = 0;
+let gpodevStatus = "";
+let gposwitch = "";
+let net_timeout = 2000;
+let poll_interval = 5000;
+let timer_id = 0;
+let netDisplayState = -1;  // Unknown = -1, no connection=0, active=1
+
+// Define a switch state record. Set all entries to -1 initially, ensuring
+// reported state differs from stored state on initial status poll.
+let sw_state =[-1,-1,-1,-1,-1,-1,-1,-1,-1];  // sw_state[0] is unused.
+
+
+// =================================== //
+//          Support functions          //
+// =================================== //
+
+// Show switch status
+function showState(index, state) {
+   let disp = document.getElementById('switch' + index).children[1];
+   if (disp)  {
+      if (state == 0) {
+         disp.classList.remove('redbox');
+      } else {
+         disp.classList.add('redbox');
+      }
+   }
+}
+
+function togglesw(sw_id) {
+   let newval = sw_state[sw_id] == 0 ? 1 : 0;
+   makeSwitch(sw_id, newval);
+}
+
+function switchon(sw_id) { makeSwitch(sw_id, 1); }
+function switchoff(sw_id) { makeSwitch(sw_id, 0); }
+function makeSwitch(sw_id, sw_state) {
+   let swCmd = gposwitch + "?s" + sw_id + "=" + sw_state;
+   setSwitchOrPoll(swCmd, fetchOptions);
+}
+
+
+// ========================================================
+function panelStart() {
+   // Config loaded into myconfig object by <script>
+   if (myconfig != undefined) {
+      switchIP = myconfig.ipaddr;
+      switchPort = myconfig.port;
+      gpodevStatus = 'http://' + switchIP + ':' + switchPort;
+      gposwitch = gpodevStatus + myconfig.switchurl;
+      net_timeout = myconfig.net_timeout;
+      poll_interval = myconfig.poll_interval;
+
+      // Load and install output captions
+      let my_node = document.getElementById("outer");
+      if (my_node) {
+         let num_switches = my_node.children.length;  // Check number of configured switch blocks
+         let num_names = myconfig.output_names.length;
+         if (num_names-1 < num_switches) num_switches = num_names-1; // Not all names may be present in the config file
+         for (let ix = 1; ix <= num_switches; ix++) {
+            my_node.children[ix-1].children[0].innerHTML = myconfig.output_names[ix];
+         }
+      }
+   }
+   else {
+      config.error('Failed to include config data from file');
+      return;
+   }
+
+   let panelid = document.getElementById("panelident");
+   panelid.innerHTML = "GPO Switch Control - " + switchIP + " Port " + switchPort;
+
+   setInterval(checkNetwork , poll_interval);   // Start the network poll timer
+}
+
+// function checkNetwork() accesses the GPO server base address, returning switch state
+function checkNetwork() {
+   clearTimeout(timer_id);
+   setSwitchOrPoll(gpodevStatus, fetchOptions);    // Poll for status
+}
+
+function networkTimeout() {
+   timer_id = -1;
+   showNetStatus(0);
+}
+
+// Parameter in showNetStatus has value -1 for unknown, 0 for fail, 1 for ok
+function showNetStatus(state) {
+   let status_box = document.getElementById("showstat");
+   let status_text = document.getElementById("netstat-id");
+
+   switch (state) {
+      case -1:
+         if (netDisplayState != -1) {
+            status_box.classList.remove("redbox");
+            status_text.innerHTML = "Unknown Network Status";
+            netDisplayState = -1
+         }
+         break;
+
+      case 0:
+         if (netDisplayState != 0) {
+            status_box.classList.add("redbox");
+            status_text.innerHTML = "No response from network";
+            netDisplayState = 0;
+         }
+         break;
+
+      case 1:
+         if (netDisplayState != 1) {
+            status_box.classList.remove("redbox");
+            status_text.innerHTML = "Network O.K.";
+            netDisplayState = 1;
+         }
+         break;
+      
+      default:
+         // Just a catchall
+         console.error(`Invalid network status code received. code value is ${state}`);
+         break;
+   }
+}
+
+</script>
+
+</head>
+<body onload="panelStart()">
+   <div id="panelident" class="title"></div>
+   <div id="outer" class="controlpanel">
+      <div id="switch1" class="swPanel">
+         <label class="switchid">OUT 1</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(1)">Clear</button>
+         <button class="swOn" onclick="switchon(1)">Set</button>
+         <button class="swToggle" onclick="togglesw(1)">Toggle</button>
+      </div>
+      
+      <div id="switch2" class="swPanel">
+         <label class="switchid">OUT 2</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(2)">Clear</button>
+         <button class="swOn" onclick="switchon(2)">Set</button>
+         <button class="swToggle" onclick="togglesw(2)">Toggle</button>
+      </div>
+
+      <div id="switch3" class="swPanel">
+         <label class="switchid">OUT 3</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(3)">Clear</button>
+         <button class="swOn" onclick="switchon(3)">Set</button>
+         <button class="swToggle" onclick="togglesw(3)">Toggle</button>
+      </div>
+      
+      <div id="switch4" class="swPanel">
+         <label class="switchid">OUT 4</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(4)">Clear</button>
+         <button class="swOn" onclick="switchon(4)">Set</button>
+         <button class="swToggle" onclick="togglesw(4)">Toggle</button>
+      </div>
+      
+      <div id="switch5" class="swPanel">
+         <label class="switchid">OUT 5</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(5)">Clear</button>
+         <button class="swOn" onclick="switchon(5)">Set</button>
+         <button class="swToggle" onclick="togglesw(5)">Toggle</button>
+      </div>
+      
+      <div id="switch6" class="swPanel">
+         <label class="switchid">OUT 6</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(6)">Clear</button>
+         <button class="swOn" onclick="switchon(6)">Set</button>
+         <button class="swToggle" onclick="togglesw(6)">Toggle</button>
+      </div>
+      
+      <div id="switch7" class="swPanel">
+         <label class="switchid">OUT 7</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(7)">Clear</button>
+         <button class="swOn" onclick="switchon(7)">Set</button>
+         <button class="swToggle" onclick="togglesw(7)">Toggle</button>
+      </div>
+      
+      <div id="switch8" class="swPanel">
+         <label class="switchid">OUT 8</label>
+         <label class="indicate">STATE</label>
+         <button class="swOff" onclick="switchoff(8)">Clear</button>
+         <button class="swOn" onclick="switchon(8)">Set</button>
+         <button class="swToggle" onclick="togglesw(8)">Toggle</button>
+      </div>
+   </div>
+   <div id="statuspanel" class="statuspanel">
+      <div id="netstat-id" class="netstat-id">Network Status?</div>
+      <div id="showstat" class="netactions"></div>
+   </div>
+</body>
+</html>

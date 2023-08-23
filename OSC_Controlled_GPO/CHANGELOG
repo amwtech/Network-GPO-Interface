@@ -1,0 +1,13 @@
+Changelog
+=========
+
+Version 1.02   05-August-2023
+Add support to set the target port number for status reports.
+
+Version 1.01   09-July-2023
+Update documentation to include pins A4 and A5 controlling status reports
+Update C++ pre-processor code to improve testing of board and ethernet selections.
+
+
+Version 1.0    04-July-2023
+Initial Release
